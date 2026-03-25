@@ -294,6 +294,9 @@
     if (job.status === "completed" && job.download_url) {
       actionsHtml = `<a class="btn-download" href="${job.download_url}" download>Download</a>`;
     }
+    if (job.status === "failed") {
+      actionsHtml = `<a class="btn-cancel" href="/logs/${job.id}" target="_blank" style="text-decoration:none;display:inline-block">View logs</a>`;
+    }
 
     let errorHtml = "";
     if (job.status === "failed" && job.error_msg) {

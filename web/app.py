@@ -95,9 +95,15 @@ def init_db():
                 created_at REAL NOT NULL,
                 started_at REAL DEFAULT NULL,
                 finished_at REAL DEFAULT NULL,
-                error_msg  TEXT DEFAULT NULL
+                error_msg  TEXT DEFAULT NULL,
+                log        TEXT DEFAULT NULL
             )
         """)
+        # Migrate: add log column if upgrading from older schema
+        try:
+            db.execute("ALTER TABLE jobs ADD COLUMN log TEXT DEFAULT NULL")
+        except Exception:
+            pass
         db.commit()
     _import_existing_audiobooks()
 
@@ -262,9 +268,11 @@ def _run_job(job_id: int):
     done  = 0
     current_chapter = ""
     error_lines = []
+    all_lines = []
 
     for line in proc.stdout:
         line = line.rstrip()
+        all_lines.append(line)
 
         # Check if job was cancelled
         with get_db() as db:
@@ -298,6 +306,8 @@ def _run_job(job_id: int):
 
     proc.wait()
 
+    full_log = "\n".join(all_lines)
+
     with get_db() as db:
         current_status = db.execute(
             "SELECT status FROM jobs WHERE id=?", (job_id,)
@@ -311,16 +321,16 @@ def _run_job(job_id: int):
         error_summary = "; ".join(error_lines[-3:]) if error_lines else f"exit {proc.returncode}"
         with get_db() as db:
             db.execute(
-                "UPDATE jobs SET status='failed', error_msg=?, finished_at=? WHERE id=?",
-                (error_summary, time.time(), job_id)
+                "UPDATE jobs SET status='failed', error_msg=?, log=?, finished_at=? WHERE id=?",
+                (error_summary, full_log, time.time(), job_id)
             )
             db.commit()
         return
 
     with get_db() as db:
         db.execute(
-            "UPDATE jobs SET status='completed', finished_at=?, pid=NULL WHERE id=?",
-            (time.time(), job_id)
+            "UPDATE jobs SET status='completed', log=?, finished_at=?, pid=NULL WHERE id=?",
+            (full_log, time.time(), job_id)
         )
         db.commit()
 
@@ -449,6 +459,23 @@ def cancel(job_id):
             return jsonify({"ok": True})
 
     return jsonify({"error": "Job cannot be cancelled"}), 400
+
+
+@app.route("/logs/<int:job_id>")
+@login_required
+def job_logs(job_id):
+    with get_db() as db:
+        row = db.execute("SELECT title, author, status, log FROM jobs WHERE id=?", (job_id,)).fetchone()
+    if not row:
+        abort(404)
+    log = row["log"] or "(no output captured)"
+    return (
+        f"<html><head><title>Log: {row['title']}</title>"
+        "<style>body{{background:#0f1117;color:#ccc;font-family:monospace;padding:1rem}}"
+        "pre{{white-space:pre-wrap;word-break:break-all}}</style></head>"
+        f"<body><h2>{row['title']} — {row['author']} ({row['status']})</h2>"
+        f"<pre>{log}</pre></body></html>"
+    )
 
 
 @app.route("/data/<path:filepath>")
