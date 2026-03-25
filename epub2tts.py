@@ -647,7 +647,10 @@ class EpubToAudiobook:
                 #extract part text from start to end
                 for i, part in enumerate(part_list):
                     if part['chapter_file'] not in chaper_file_index:
-                        chaper_file_index[part['chapter_file']] =  BeautifulSoup(self.book.get_item_with_href(part['chapter_file']).get_content(), "html.parser")
+                        item = self.book.get_item_with_href(part['chapter_file'])
+                        if item is None:
+                            continue
+                        chaper_file_index[part['chapter_file']] = BeautifulSoup(item.get_content(), "html.parser")
                     chapter_text = self.chap2text(chaper_file_index[part['chapter_file']], part['chapter_id'], part['chapter_end_id'])
                     self.chapters.append((chapter_text, part['chapter_desc']))
 
