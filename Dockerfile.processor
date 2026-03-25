@@ -13,8 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install epub2tts and all dependencies
-RUN pip install --no-cache-dir epub2tts
+WORKDIR /app
+COPY epub2tts.py setup.py requirements.txt __init__.py process_epubs.py ./
+RUN pip install --no-cache-dir .
 
 # Pre-install spacy English model to avoid runtime uv errors
 RUN pip install --no-cache-dir \
@@ -22,9 +23,6 @@ RUN pip install --no-cache-dir \
 
 # Pre-download kokoro model weights into the image
 RUN python -c "from kokoro import KPipeline; KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')"
-
-WORKDIR /app
-COPY process_epubs.py .
 
 # epub and audiobooks dirs are mounted at runtime
 ENV EPUB_DIR=/data/epub
