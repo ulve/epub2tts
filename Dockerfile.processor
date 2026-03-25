@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmecab-dev \
     mecab-ipadic-utf8 \
     git \
+    cargo \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -22,6 +23,8 @@ RUN if [ "$CPU_ONLY" = "true" ]; then \
       pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
+# coqui-tts and sudachipy need special handling (same as upstream install instructions)
+RUN pip install --no-cache-dir coqui-tts --only-binary spacy
 RUN pip install --no-cache-dir .
 
 # Pre-install spacy English model to avoid runtime uv errors
