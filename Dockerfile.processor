@@ -15,6 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY epub2tts.py setup.py requirements.txt __init__.py process_epubs.py ./
+
+# For CPU-only builds, install torch without CUDA before the rest to avoid pulling CUDA wheels
+ARG CPU_ONLY=false
+RUN if [ "$CPU_ONLY" = "true" ]; then \
+      pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu; \
+    fi
+
 RUN pip install --no-cache-dir .
 
 # Pre-install spacy English model to avoid runtime uv errors

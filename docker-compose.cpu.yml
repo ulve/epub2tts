@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile.processor
       args:
         BASE_IMAGE: python:3.11-slim
+        CPU_ONLY: "true"
     volumes:
       - ./epub:/data/epub
       - ./audiobooks:/data/audiobooks
