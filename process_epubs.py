@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import subprocess
+import time
 from pathlib import Path
 
 import ebooklib
@@ -43,6 +44,32 @@ def already_done(output_dir: Path) -> bool:
     return any(output_dir.glob("*.m4b"))
 
 
+def format_duration(seconds: float) -> str:
+    seconds = int(seconds)
+    h, m, s = seconds // 3600, (seconds % 3600) // 60, seconds % 60
+    if h:
+        return f"{h}h{m:02d}m{s:02d}s"
+    if m:
+        return f"{m}m{s:02d}s"
+    return f"{s}s"
+
+
+def print_progress(done: int, total: int, chapter: str, start: float):
+    elapsed = time.time() - start
+    pct = done / total * 100 if total else 0
+    eta_str = ""
+    if done > 0 and total > 0:
+        eta = elapsed / done * (total - done)
+        eta_str = f"  ETA {format_duration(eta)}"
+    bar_width = 20
+    filled = int(bar_width * done / total) if total else 0
+    bar = "#" * filled + "-" * (bar_width - filled)
+    chapter_short = chapter[:40].ljust(40)
+    line = f"\r[{bar}] {pct:5.1f}%  {done}/{total}  elapsed {format_duration(elapsed)}{eta_str}  {chapter_short}"
+    sys.stdout.write(line)
+    sys.stdout.flush()
+
+
 def process(epub_path: Path):
     title, author = get_epub_metadata(epub_path)
     folder_name = sanitize(f"{title} - {author}")
@@ -54,16 +81,46 @@ def process(epub_path: Path):
         return True
 
     print(f"[processing] {epub_path.name}")
-    print(f"          -> audiobooks/{folder_name}/")
+    print(f"          -> audiobooks/{folder_name}/\n")
 
     cmd = [str(EPUB2TTS_BIN), str(epub_path.resolve()), "--engine", ENGINE] + EXTRA_ARGS
-    result = subprocess.run(cmd, cwd=output_dir)
+    proc = subprocess.Popen(
+        cmd, cwd=output_dir,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, bufsize=1
+    )
 
-    if result.returncode != 0:
-        print(f"[error] Failed processing {epub_path.name} (exit {result.returncode})")
+    total = 0
+    done = 0
+    current_chapter = ""
+    start = time.time()
+
+    for line in proc.stdout:
+        line = line.rstrip()
+        if line.startswith("Number of chapters to read:"):
+            try:
+                total = int(line.split(":")[1].strip())
+            except ValueError:
+                pass
+        elif line.startswith("initiating chapter:"):
+            current_chapter = line.replace("initiating chapter:", "").strip()
+            if total:
+                print_progress(done, total, current_chapter, start)
+        elif line.startswith("done chapter:"):
+            done += 1
+            if total:
+                print_progress(done, total, current_chapter, start)
+
+    proc.wait()
+    if total:
+        print()  # newline after progress bar
+
+    if proc.returncode != 0:
+        print(f"[error] Failed processing {epub_path.name} (exit {proc.returncode})")
         return False
 
-    print(f"[done] {folder_name}")
+    elapsed = time.time() - start
+    print(f"[done] {folder_name}  ({format_duration(elapsed)} total)")
     return True
 
 
