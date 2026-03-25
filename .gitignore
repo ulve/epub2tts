@@ -26,3 +26,10 @@ pip-log.txt
 .tox
 
 .python-version
+
+# Processor folders
+epub/
+audiobooks/
+*.epub
+*.m4b
+*.srt
