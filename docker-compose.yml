@@ -1,0 +1,19 @@
+services:
+  epub2tts:
+    build:
+      context: .
+      dockerfile: Dockerfile.processor
+    volumes:
+      - ./epub:/data/epub
+      - ./audiobooks:/data/audiobooks
+    environment:
+      - TTS_ENGINE=kokoro
+      - EPUB2TTS_ARGS=--skiplinks --skipfootnotes
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: "no"
