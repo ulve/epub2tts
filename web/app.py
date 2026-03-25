@@ -237,7 +237,7 @@ def _run_job(job_id: int):
     title     = row["title"]
     author    = row["author"]
 
-    folder_name = sanitize(f"{title} - {author}")
+    folder_name = sanitize(f"{title} - {author} [{voice}]")
     output_dir  = AUDIOBOOKS_DIR / folder_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
