@@ -60,7 +60,8 @@ KOKORO_VOICES = [
 # App
 # ---------------------------------------------------------------------------
 
-app = Flask(__name__, static_folder="/app/static", template_folder="templates")
+_HERE = Path(__file__).parent
+app = Flask(__name__, static_folder=str(_HERE / "static"), template_folder=str(_HERE / "templates"))
 app.secret_key = SECRET_KEY
 
 # ---------------------------------------------------------------------------
@@ -470,7 +471,7 @@ def voice_sample(voice):
     allowed = {v[0] for v in KOKORO_VOICES}
     if voice not in allowed:
         abort(404)
-    sample_path = Path("/app/static/samples") / f"{voice}.mp3"
+    sample_path = _HERE / "static" / "samples" / f"{voice}.mp3"
     if not sample_path.exists():
         abort(404)
     return send_file(str(sample_path), mimetype="audio/mpeg")
