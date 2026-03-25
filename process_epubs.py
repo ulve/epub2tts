@@ -94,6 +94,7 @@ def process(epub_path: Path):
     done = 0
     current_chapter = ""
     start = time.time()
+    error_lines = []
 
     for line in proc.stdout:
         line = line.rstrip()
@@ -110,6 +111,8 @@ def process(epub_path: Path):
             done += 1
             if total:
                 print_progress(done, total, current_chapter, start)
+        elif any(w in line.lower() for w in ("error", "traceback", "exception", "failed")):
+            error_lines.append(line)
 
     proc.wait()
     if total:
@@ -117,6 +120,10 @@ def process(epub_path: Path):
 
     if proc.returncode != 0:
         print(f"[error] Failed processing {epub_path.name} (exit {proc.returncode})")
+        if error_lines:
+            print("  Details:")
+            for l in error_lines[-5:]:
+                print(f"    {l}")
         return False
 
     elapsed = time.time() - start
