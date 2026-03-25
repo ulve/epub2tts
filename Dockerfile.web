@@ -1,0 +1,44 @@
+ARG BASE_IMAGE=pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
+FROM ${BASE_IMAGE}
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    espeak-ng \
+    libespeak-ng1 \
+    ffmpeg \
+    mecab \
+    libmecab-dev \
+    mecab-ipadic-utf8 \
+    git \
+    cargo \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY epub2tts.py setup.py requirements.txt __init__.py process_epubs.py ./
+
+ARG CPU_ONLY=false
+RUN if [ "$CPU_ONLY" = "true" ]; then \
+      pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu; \
+    fi
+
+RUN pip install --no-cache-dir coqui-tts --only-binary spacy
+RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir flask
+
+RUN pip install --no-cache-dir \
+    https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+
+RUN python -c "from kokoro import KPipeline; KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')"
+
+COPY web/ /app/web/
+
+ENV EPUB_DIR=/data/uploads
+ENV AUDIOBOOKS_DIR=/data/audiobooks
+ENV TTS_ENGINE=kokoro
+ENV FLASK_SECRET_KEY=changeme
+ENV WEB_PASSWORD=changeme
+
+EXPOSE 5000
+
+ENTRYPOINT ["python", "web/app.py"]

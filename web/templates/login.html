@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>echo – Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f1117;
+      color: #e8e8e8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2e3147;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 360px;
+    }
+    h1 { margin: 0 0 1.5rem; font-size: 1.4rem; color: #fff; }
+    label { display: block; margin-bottom: .4rem; font-size: .85rem; color: #aaa; }
+    input[type=password] {
+      width: 100%;
+      padding: .6rem .8rem;
+      background: #0f1117;
+      border: 1px solid #2e3147;
+      border-radius: 8px;
+      color: #e8e8e8;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    input[type=password]:focus { outline: none; border-color: #5b6af0; }
+    button {
+      width: 100%;
+      padding: .65rem;
+      background: #5b6af0;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #4a59e0; }
+    .error { color: #f87171; font-size: .85rem; margin-bottom: .8rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>echo</h1>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <form method="post">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autofocus>
+      <button type="submit">Sign in</button>
+    </form>
+  </div>
+</body>
+</html>

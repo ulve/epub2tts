@@ -1,0 +1,27 @@
+services:
+  epub2tts-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+    environment:
+      - TTS_ENGINE=kokoro
+      - EPUB2TTS_ARGS=--skiplinks --skipfootnotes
+      # Voice is chosen per-job via the web UI
+      - WEB_PASSWORD=changeme
+      - FLASK_SECRET_KEY=changeme
+      # American English female: af_heart af_bella af_nicole af_sarah af_sky
+      # American English male:   am_adam am_michael am_echo am_eric am_fenrir am_liam am_onyx
+      # British English female:  bf_alice bf_emma bf_isabella bf_lily
+      # British English male:    bm_daniel bm_fable bm_george bm_lewis
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped

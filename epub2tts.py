@@ -539,7 +539,9 @@ class EpubToAudiobook:
         else:
             soup = BeautifulSoup(chap, "html.parser")
         if element_id is not None:
-            soup = soup.find(id=element_id).parent
+            found = soup.find(id=element_id)
+            if found is not None:
+                soup = found.parent
 
         #We copy the html tree before modifining it
         soup = copy.deepcopy(soup)
